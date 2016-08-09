@@ -10,7 +10,7 @@ import butterknife.annotation.BindString;
 
 /**
  * Created by long on 2016/8/9.
- * æ³¨è§£è§£æç»‘å®šå¸®åŠ©ç±»
+ * ×¢½â½âÎö°ó¶¨°ïÖúÀà
  */
 public final class ParseHelper {
 
@@ -18,13 +18,13 @@ public final class ParseHelper {
 
 
     private ParseHelper() {
-
+        throw new AssertionError("No instances.");
     }
 
 
     public static void parseResString(Element element, Map<TypeElement, BindingClass> targetClassMap,
                                       Elements elementUtils) {
-        // è·å–å­—æ®µåå’Œæ³¨è§£çš„èµ„æºID
+        // »ñÈ¡×Ö¶ÎÃûºÍ×¢½âµÄ×ÊÔ´ID
         String name = element.getSimpleName().toString();
         int resId = element.getAnnotation(BindString.class).value();
 
@@ -38,19 +38,19 @@ public final class ParseHelper {
                                                        Elements elementUtils) {
         TypeElement enclosingElement = (TypeElement) element.getEnclosingElement();
         BindingClass bindingClass = targetClassMap.get(enclosingElement);
-        // ä»¥ä¸‹ä»¥ com.butterknife.MainActivity è¿™ä¸ªç±»ä¸ºä¾‹
+        // ÒÔÏÂÒÔ com.butterknife.MainActivity Õâ¸öÀàÎªÀı
         if (bindingClass == null) {
-            // è·å–å…ƒç´ çš„å®Œå…¨é™å®šåç§°ï¼šcom.butterknife.MainActivity
+            // »ñÈ¡ÔªËØµÄÍêÈ«ÏŞ¶¨Ãû³Æ£ºcom.butterknife.MainActivity
             String targetType = enclosingElement.getQualifiedName().toString();
-            // è·å–å…ƒç´ æ‰€åœ¨åŒ…åï¼šcom.butterknife
+            // »ñÈ¡ÔªËØËùÔÚ°üÃû£ºcom.butterknife
             String classPackage = elementUtils.getPackageOf(enclosingElement).getQualifiedName().toString();
-            // è·å–è¦ç”Ÿæˆçš„Classçš„åç§°ï¼šMainActivity$$ViewBinder
+            // »ñÈ¡ÒªÉú³ÉµÄClassµÄÃû³Æ£ºMainActivity$$ViewBinder
             int packageLen = classPackage.length() + 1;
             String className = targetType.substring(packageLen).replace('.', '$') + BINDING_CLASS_SUFFIX;
-            // ç”ŸæˆClassçš„å®Œå…¨é™å®šåç§°ï¼šcom.butterknife.MainActivity$$ViewBinder
+            // Éú³ÉClassµÄÍêÈ«ÏŞ¶¨Ãû³Æ£ºcom.butterknife.MainActivity$$ViewBinder
             String classFqcn = classPackage + "." + className;
 
-            /* ä¸è¦ç”¨ä¸‹é¢è¿™ä¸ªæ¥ç”ŸæˆClassåç§°ï¼Œå†…éƒ¨ç±»ä¼šå‡ºé”™ */
+            /* ²»ÒªÓÃÏÂÃæÕâ¸öÀ´Éú³ÉClassÃû³Æ£¬ÄÚ²¿Àà»á³ö´í */
 //            String className = enclosingElement.getSimpleName() + BINDING_CLASS_SUFFIX;
 
             bindingClass = new BindingClass(classPackage, className, targetType, classFqcn);

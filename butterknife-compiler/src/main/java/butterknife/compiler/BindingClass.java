@@ -15,11 +15,9 @@ import javax.lang.model.element.Modifier;
 
 /**
  * Created by long on 2016/8/9.
- * ç»‘å®šå¤„ç†ç±»
+ * °ó¶¨´¦ÀíÀà
  */
 public final class BindingClass {
-
-    public static final String BINDING_CLASS_SUFFIX = "$$ViewBinder";
 
     private static final ClassName FINDER = ClassName.get("com.dl7.butterknifelib", "Finder");
     private static final ClassName VIEW_BINDER = ClassName.get("com.dl7.butterknifelib", "ViewBinder");
@@ -36,15 +34,13 @@ public final class BindingClass {
 
 
     /**
-     * ç»‘å®šå¤„ç†ç±»
-     * @param classPackage  åŒ…å
-     * @param className     ç”Ÿæˆçš„ç±»ï¼šSimpleActivity$$ViewBinder
-     * @param targetClass   ç›®æ ‡ç±»ï¼šSimpleActivity
-     * @param classFqcn
+     * °ó¶¨´¦ÀíÀà
+     * @param classPackage  °üÃû£ºcom.butterknife
+     * @param className     Éú³ÉµÄÀà£ºMainActivity$$ViewBinder
+     * @param targetClass   Ä¿±êÀà£ºcom.butterknife.MainActivity
+     * @param classFqcn     Éú³ÉClassµÄÍêÈ«ÏŞ¶¨Ãû³Æ£ºcom.butterknife.MainActivity$$ViewBinder
      */
     public BindingClass(String classPackage, String className, String targetClass, String classFqcn) {
-        // className = SimpleActivity$$ViewBinder
-        // targetClass = SimpleActivity
         this.classPackage = classPackage;
         this.className = className;
         this.targetClass = targetClass;
@@ -52,13 +48,17 @@ public final class BindingClass {
     }
 
     /**
-     * æ·»åŠ èµ„æº
-     * @param binding èµ„æºä¿¡æ¯
+     * Ìí¼Ó×ÊÔ´
+     * @param binding ×ÊÔ´ĞÅÏ¢
      */
     public void addResource(FieldResourceBinding binding) {
         resourceBindings.add(binding);
     }
 
+    /**
+     * Éú³ÉJavaÀà
+     * @return  JavaFile
+     */
     public JavaFile brewJava() {
         TypeSpec.Builder result = TypeSpec.classBuilder(className)
                 .addModifiers(Modifier.PUBLIC)

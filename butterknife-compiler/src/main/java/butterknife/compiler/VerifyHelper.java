@@ -24,7 +24,7 @@ public final class VerifyHelper {
 
 
     private VerifyHelper() {
-
+        throw new AssertionError("No instances.");
     }
 
 
