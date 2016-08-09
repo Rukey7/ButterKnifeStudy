@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">ButterKnifeStudy</string>
+
+    <string name="bind_string">BindStringAnnotation</string>
+</resources>
