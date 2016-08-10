@@ -17,10 +17,14 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 
+import butterknife.annotation.BindColor;
 import butterknife.annotation.BindString;
 import butterknife.compiler.BindingClass;
 import butterknife.compiler.ParseHelper;
@@ -50,18 +54,36 @@ public class ResBindProcessor extends AbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         Map<TypeElement, BindingClass> targetClassMap = new LinkedHashMap<>();
+        Set<TypeElement> erasedTargetNames = new LinkedHashSet<>();
 
         for (Element element : roundEnv.getElementsAnnotatedWith(BindString.class)) {
-            System.out.println("-------------------------");
             if (VerifyHelper.verifyResString(element, messager)) {
                 ParseHelper.parseResString(element, targetClassMap, elementUtils);
+                erasedTargetNames.add((TypeElement) element.getEnclosingElement());
             }
-            System.out.println("-------------------------");
         }
+
+        for (Element element : roundEnv.getElementsAnnotatedWith(BindColor.class)) {
+            if (VerifyHelper.verifyResColor(element, messager)) {
+                ParseHelper.parseResColor(element, targetClassMap, elementUtils);
+                erasedTargetNames.add((TypeElement) element.getEnclosingElement());
+            }
+        }
+
+
 
         for (Map.Entry<TypeElement, BindingClass> entry : targetClassMap.entrySet()) {
             TypeElement typeElement = entry.getKey();
             BindingClass bindingClass = entry.getValue();
+
+            TypeElement parentType = _findParentType(typeElement, erasedTargetNames);
+            if (parentType != null) {
+                System.out.println("--------------------------");
+                System.out.println(parentType.getQualifiedName());
+                System.out.println("--------------------------");
+                BindingClass parentBinding = targetClassMap.get(parentType);
+                bindingClass.setParentBinding(parentBinding);
+            }
 
             try {
                 bindingClass.brewJava().writeTo(filer);
@@ -77,6 +99,7 @@ public class ResBindProcessor extends AbstractProcessor {
     public Set<String> getSupportedAnnotationTypes() {
         Set<String> annotations = new LinkedHashSet<>();
         annotations.add(BindString.class.getCanonicalName());
+        annotations.add(BindColor.class.getCanonicalName());
         return annotations;
     }
 
@@ -86,6 +109,30 @@ public class ResBindProcessor extends AbstractProcessor {
     }
 
     /*************************************************************************/
+
+    /**
+     * 查找父类型
+     * @param typeElement   类元素
+     * @param erasedTargetNames 存在的类元素
+     * @return
+     */
+    private TypeElement _findParentType(TypeElement typeElement, Set<TypeElement> erasedTargetNames) {
+        TypeMirror typeMirror;
+        while (true) {
+            // 父类型要通过 TypeMirror 来获取
+            typeMirror = typeElement.getSuperclass();
+            if (typeMirror.getKind() == TypeKind.NONE) {
+                return null;
+            }
+            // 获取父类元素
+            typeElement = (TypeElement) ((DeclaredType)typeMirror).asElement();
+            if (erasedTargetNames.contains(typeElement)) {
+                // 如果父类元素存在则返回
+                return typeElement;
+            }
+        }
+    }
+
 
     /**
      * 输出错误信息

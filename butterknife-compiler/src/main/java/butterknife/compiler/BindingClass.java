@@ -15,7 +15,7 @@ import javax.lang.model.element.Modifier;
 
 /**
  * Created by long on 2016/8/9.
- * °ó¶¨´¦ÀíÀà
+ * ç»‘å®šå¤„ç†ç±»
  */
 public final class BindingClass {
 
@@ -24,9 +24,12 @@ public final class BindingClass {
     private static final ClassName VIEW = ClassName.get("android.view", "View");
     private static final ClassName CONTEXT = ClassName.get("android.content", "Context");
     private static final ClassName RESOURCES = ClassName.get("android.content.res", "Resources");
+    private static final ClassName CONTEXT_COMPAT = ClassName.get("android.support.v4.content", "ContextCompat");
 
 
     private final List<FieldResourceBinding> resourceBindings = new ArrayList<>();
+    private final List<FieldColorBinding> colorBindings = new ArrayList<>();
+    private BindingClass parentBinding;
     private final String classPackage;
     private final String className;
     private final String targetClass;
@@ -34,11 +37,11 @@ public final class BindingClass {
 
 
     /**
-     * °ó¶¨´¦ÀíÀà
-     * @param classPackage  °üÃû£ºcom.butterknife
-     * @param className     Éú³ÉµÄÀà£ºMainActivity$$ViewBinder
-     * @param targetClass   Ä¿±êÀà£ºcom.butterknife.MainActivity
-     * @param classFqcn     Éú³ÉClassµÄÍêÈ«ÏŞ¶¨Ãû³Æ£ºcom.butterknife.MainActivity$$ViewBinder
+     * ç»‘å®šå¤„ç†ç±»
+     * @param classPackage  åŒ…åï¼šcom.butterknife
+     * @param className     ç”Ÿæˆçš„ç±»ï¼šMainActivity$$ViewBinder
+     * @param targetClass   ç›®æ ‡ç±»ï¼šcom.butterknife.MainActivity
+     * @param classFqcn     ç”ŸæˆClassçš„å®Œå…¨é™å®šåç§°ï¼šcom.butterknife.MainActivity$$ViewBinder
      */
     public BindingClass(String classPackage, String className, String targetClass, String classFqcn) {
         this.classPackage = classPackage;
@@ -47,16 +50,9 @@ public final class BindingClass {
         this.classFqcn = classFqcn;
     }
 
-    /**
-     * Ìí¼Ó×ÊÔ´
-     * @param binding ×ÊÔ´ĞÅÏ¢
-     */
-    public void addResource(FieldResourceBinding binding) {
-        resourceBindings.add(binding);
-    }
 
     /**
-     * Éú³ÉJavaÀà
+     * ç”ŸæˆJavaç±»
      * @return  JavaFile
      */
     public JavaFile brewJava() {
@@ -64,7 +60,13 @@ public final class BindingClass {
                 .addModifiers(Modifier.PUBLIC)
                 .addTypeVariable(TypeVariableName.get("T", ClassName.bestGuess(targetClass)));
 
-        result.addSuperinterface(ParameterizedTypeName.get(VIEW_BINDER, TypeVariableName.get("T")));
+        if (_hasParentBinding()) {
+            result.superclass(ParameterizedTypeName.get(ClassName.bestGuess(parentBinding.classFqcn),
+                    TypeVariableName.get("T")));
+        } else {
+            result.addSuperinterface(ParameterizedTypeName.get(VIEW_BINDER, TypeVariableName.get("T")));
+        }
+
         result.addMethod(createBindMethod());
 
         return JavaFile.builder(classPackage, result.build())
@@ -72,7 +74,10 @@ public final class BindingClass {
                 .build();
     }
 
-
+    /**
+     * åˆ›å»ºæ–¹æ³•
+     * @return  MethodSpec
+     */
     private MethodSpec createBindMethod() {
         MethodSpec.Builder result = MethodSpec.methodBuilder("bind")
                 .addAnnotation(Override.class)
@@ -81,20 +86,69 @@ public final class BindingClass {
                 .addParameter(TypeVariableName.get("T"), "target", Modifier.FINAL)
                 .addParameter(Object.class, "source");
 
-        result.addAnnotation(AnnotationSpec.builder(SuppressWarnings.class)
-                .addMember("value", "$S", "ResourceType")
-                .build());
-        result.addStatement("$T res = finder.getContext(source).getResources()", RESOURCES);
+        if (_hasParentBinding()) {
+            result.addStatement("super.bind(finder, target, source)");
+        }
 
-        for (FieldResourceBinding binding : resourceBindings) {
-            if (binding.isThemeable()) {
+        if (_hasResourceBinding()) {
+            // è¿‡æ»¤è­¦å‘Š
+            result.addAnnotation(AnnotationSpec.builder(SuppressWarnings.class)
+                    .addMember("value", "$S", "ResourceType")
+                    .build());
+            result.addStatement("$T context = finder.getContext(source)", CONTEXT);
+            result.addStatement("$T res = context.getResources()", RESOURCES);
+
+            for (FieldResourceBinding binding : resourceBindings) {
+                if (binding.isThemeable()) {
 //                result.addStatement("target.$L = $T.$L(res, theme, $L)", binding.getName(),
 //                        UTILS, binding.getMethod(), binding.getId());
-            } else {
-                result.addStatement("target.$L = res.$L($L)", binding.getName(), binding.getMethod(),
-                        binding.getId());
+                } else {
+                    result.addStatement("target.$L = res.$L($L)", binding.getName(), binding.getMethod(),
+                            binding.getId());
+                }
+            }
+
+            for (FieldColorBinding binding : colorBindings) {
+                result.addStatement("target.$L = $T.$L(context, $L)", binding.getName(), CONTEXT_COMPAT,
+                        binding.getMethod(), binding.getId());
             }
         }
         return result.build();
+    }
+
+    /**
+     * æ·»åŠ èµ„æº
+     * @param binding èµ„æºä¿¡æ¯
+     */
+    public void addResourceBinding(FieldResourceBinding binding) {
+        resourceBindings.add(binding);
+    }
+
+    private boolean _hasResourceBinding() {
+        return !(resourceBindings.isEmpty() && colorBindings.isEmpty());
+    }
+
+    /**
+     * æ·»åŠ èµ„æº
+     * @param binding èµ„æºä¿¡æ¯
+     */
+    public void addColorBinding(FieldColorBinding binding) {
+        colorBindings.add(binding);
+    }
+
+    private boolean _hasColorBinding() {
+        return !colorBindings.isEmpty();
+    }
+
+    /**
+     * è®¾ç½®çˆ¶ç±»
+     * @param parentBinding BindingClass
+     */
+    public void setParentBinding(BindingClass parentBinding) {
+        this.parentBinding = parentBinding;
+    }
+
+    private boolean _hasParentBinding() {
+        return parentBinding != null;
     }
 }

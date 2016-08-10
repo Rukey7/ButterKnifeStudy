@@ -1,13 +1,16 @@
 package com.dl7.butterknifelib;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.support.annotation.NonNull;
+import android.view.View;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
  * Created by long on 2016/8/9.
+ * 提供资源绑定接口的类
  */
 public class ButterKnife {
 
@@ -19,8 +22,52 @@ public class ButterKnife {
     }
 
 
+    /**
+     * 绑定 Activity
+     * @param target 目标为 Activity
+     */
     public static void bind(@NonNull Activity target) {
-        bind(target, target, Finder.ACTIVITY);
+        _bind(target, target, Finder.ACTIVITY);
+    }
+    /**
+     * 绑定目标对象
+     * @param target 目标为 Object
+     * @param source 依赖 Activity
+     */
+    public static void bind(@NonNull Object target, @NonNull Activity source) {
+        _bind(target, source, Finder.ACTIVITY);
+    }
+
+    /**
+     * 绑定 View
+     * @param target 目标为 View
+     */
+    public static void bind(@NonNull View target) {
+        _bind(target, target, Finder.VIEW);
+    }
+    /**
+     * 绑定目标对象
+     * @param target 目标为 Object
+     * @param source 依赖 View
+     */
+    public static void bind(@NonNull Object target, @NonNull View source) {
+        _bind(target, source, Finder.VIEW);
+    }
+
+    /**
+     * 绑定 Dialog
+     * @param target 目标为 Dialog
+     */
+    public static void bind(@NonNull Dialog target) {
+        _bind(target, target, Finder.DIALOG);
+    }
+    /**
+     * 绑定目标对象
+     * @param target 目标为 Object
+     * @param source 依赖 Dialog
+     */
+    public static void bind(@NonNull Object target, @NonNull Dialog source) {
+        _bind(target, source, Finder.DIALOG);
     }
 
     /**
@@ -29,7 +76,7 @@ public class ButterKnife {
      * @param source 来源：activity、dialog 或 view
      * @param finder 辅助查找的工具，配合source使用
      */
-    static void bind(@NonNull Object target, @NonNull Object source, @NonNull Finder finder) {
+    private static void _bind(@NonNull Object target, @NonNull Object source, @NonNull Finder finder) {
         Class<?> targetClass = target.getClass();
         try {
             ViewBinder<Object> viewBinder = findViewBinderForClass(targetClass);
@@ -60,10 +107,11 @@ public class ButterKnife {
             return null;
         }
         try {
+            // 利用反射来生成对应 ViewBinder
             Class<?> viewBindingClass = Class.forName(clsName + "$$ViewBinder");
-            //noinspection unchecked
             viewBinder = (ViewBinder<Object>) viewBindingClass.newInstance();
         } catch (ClassNotFoundException e) {
+            // 查找父类是否存在
             viewBinder = findViewBinderForClass(cls.getSuperclass());
         }
         BINDERS.put(cls, viewBinder);

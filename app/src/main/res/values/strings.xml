@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">ButterKnifeStudy</string>
 
-    <string name="bind_string">BindStringAnnotation</string>
+    <string name="activity_string">BindActivityString</string>
+    <string name="fragment_string">BindFragmentString</string>
+    <string name="a_string">AClassString</string>
+    <string name="b_string">BClassString</string>
 </resources>

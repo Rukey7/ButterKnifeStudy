@@ -6,51 +6,94 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 
+import butterknife.annotation.BindColor;
 import butterknife.annotation.BindString;
 
 /**
  * Created by long on 2016/8/9.
- * ×¢½â½âÎö°ó¶¨°ïÖúÀà
+ * æ³¨è§£è§£æç»‘å®šå¸®åŠ©ç±»
  */
 public final class ParseHelper {
 
     private static final String BINDING_CLASS_SUFFIX = "$$ViewBinder";
+    private static final String COLOR_STATE_LIST_TYPE = "android.content.res.ColorStateList";
 
 
     private ParseHelper() {
         throw new AssertionError("No instances.");
     }
 
-
+    /**
+     * è§£æ String èµ„æº
+     * @param element     ä½¿ç”¨æ³¨è§£çš„å…ƒç´ 
+     * @param targetClassMap  æ˜ å°„è¡¨
+     * @param elementUtils  å…ƒç´ å·¥å…·ç±»
+     */
     public static void parseResString(Element element, Map<TypeElement, BindingClass> targetClassMap,
                                       Elements elementUtils) {
-        // »ñÈ¡×Ö¶ÎÃûºÍ×¢½âµÄ×ÊÔ´ID
+        // è·å–å­—æ®µåå’Œæ³¨è§£çš„èµ„æºID
         String name = element.getSimpleName().toString();
         int resId = element.getAnnotation(BindString.class).value();
 
-        BindingClass bindingClass = getOrCreateTargetClass(targetClassMap, element, elementUtils);
+        BindingClass bindingClass = _getOrCreateTargetClass(element, targetClassMap, elementUtils);
+        // ç”Ÿæˆèµ„æºä¿¡æ¯
         FieldResourceBinding binding = new FieldResourceBinding(resId, name, "getString", false);
-        bindingClass.addResource(binding);
+        // ç»™BindingClassæ·»åŠ èµ„æºä¿¡æ¯
+        bindingClass.addResourceBinding(binding);
+    }
+
+    /**
+     * è§£æ String èµ„æº
+     * @param element     ä½¿ç”¨æ³¨è§£çš„å…ƒç´ 
+     * @param targetClassMap  æ˜ å°„è¡¨
+     * @param elementUtils  å…ƒç´ å·¥å…·ç±»
+     */
+    public static void parseResColor(Element element, Map<TypeElement, BindingClass> targetClassMap,
+                                      Elements elementUtils) {
+        // è·å–å­—æ®µåå’Œæ³¨è§£çš„èµ„æºID
+        String name = element.getSimpleName().toString();
+        int resId = element.getAnnotation(BindColor.class).value();
+
+        BindingClass bindingClass = _getOrCreateTargetClass(element, targetClassMap, elementUtils);
+        // ç”Ÿæˆèµ„æºä¿¡æ¯
+        FieldColorBinding binding;
+        if (COLOR_STATE_LIST_TYPE.equals(element.asType().toString())) {
+            binding = new FieldColorBinding(resId, name, "getColorStateList");
+        } else {
+            binding = new FieldColorBinding(resId, name, "getColor");
+        }
+
+        // ç»™BindingClassæ·»åŠ èµ„æºä¿¡æ¯
+        bindingClass.addColorBinding(binding);
     }
 
 
-    private static BindingClass getOrCreateTargetClass(Map<TypeElement, BindingClass> targetClassMap, Element element,
-                                                       Elements elementUtils) {
+    /*************************************************************************/
+
+    /**
+     * è·å–å­˜åœ¨çš„ BindingClassï¼Œæ²¡æœ‰åˆ™é‡æ–°ç”Ÿæˆ
+     * @param element     ä½¿ç”¨æ³¨è§£çš„å…ƒç´ 
+     * @param targetClassMap  æ˜ å°„è¡¨
+     * @param elementUtils  å…ƒç´ å·¥å…·ç±»
+     * @return  BindingClass
+     */
+    private static BindingClass _getOrCreateTargetClass(Element element, Map<TypeElement, BindingClass> targetClassMap,
+                                                        Elements elementUtils) {
         TypeElement enclosingElement = (TypeElement) element.getEnclosingElement();
         BindingClass bindingClass = targetClassMap.get(enclosingElement);
-        // ÒÔÏÂÒÔ com.butterknife.MainActivity Õâ¸öÀàÎªÀı
+        // ä»¥ä¸‹ä»¥ com.butterknife.MainActivity è¿™ä¸ªç±»ä¸ºä¾‹
         if (bindingClass == null) {
-            // »ñÈ¡ÔªËØµÄÍêÈ«ÏŞ¶¨Ãû³Æ£ºcom.butterknife.MainActivity
+            // è·å–å…ƒç´ çš„å®Œå…¨é™å®šåç§°ï¼šcom.butterknife.MainActivity
             String targetType = enclosingElement.getQualifiedName().toString();
-            // »ñÈ¡ÔªËØËùÔÚ°üÃû£ºcom.butterknife
+            // è·å–å…ƒç´ æ‰€åœ¨åŒ…åï¼šcom.butterknife
             String classPackage = elementUtils.getPackageOf(enclosingElement).getQualifiedName().toString();
-            // »ñÈ¡ÒªÉú³ÉµÄClassµÄÃû³Æ£ºMainActivity$$ViewBinder
+            // è·å–è¦ç”Ÿæˆçš„Classçš„åç§°ï¼šMainActivity$$ViewBinder
             int packageLen = classPackage.length() + 1;
             String className = targetType.substring(packageLen).replace('.', '$') + BINDING_CLASS_SUFFIX;
-            // Éú³ÉClassµÄÍêÈ«ÏŞ¶¨Ãû³Æ£ºcom.butterknife.MainActivity$$ViewBinder
+            // ç”ŸæˆClassçš„å®Œå…¨é™å®šåç§°ï¼šcom.butterknife.MainActivity$$ViewBinder
             String classFqcn = classPackage + "." + className;
 
-            /* ²»ÒªÓÃÏÂÃæÕâ¸öÀ´Éú³ÉClassÃû³Æ£¬ÄÚ²¿Àà»á³ö´í */
+            /* ä¸è¦ç”¨ä¸‹é¢è¿™ä¸ªæ¥ç”ŸæˆClassåç§°ï¼Œå†…éƒ¨ç±»ä¼šå‡ºé”™,æ¯”å¦‚ViewHolder */
 //            String className = enclosingElement.getSimpleName() + BINDING_CLASS_SUFFIX;
 
             bindingClass = new BindingClass(classPackage, className, targetType, classFqcn);
