@@ -26,7 +26,6 @@ public final class BindingClass {
     private static final ClassName RESOURCES = ClassName.get("android.content.res", "Resources");
     private static final ClassName CONTEXT_COMPAT = ClassName.get("android.support.v4.content", "ContextCompat");
 
-
     private final List<FieldResourceBinding> resourceBindings = new ArrayList<>();
     private final List<FieldColorBinding> colorBindings = new ArrayList<>();
     private BindingClass parentBinding;
@@ -38,10 +37,11 @@ public final class BindingClass {
 
     /**
      * 绑定处理类
-     * @param classPackage  包名：com.butterknife
-     * @param className     生成的类：MainActivity$$ViewBinder
-     * @param targetClass   目标类：com.butterknife.MainActivity
-     * @param classFqcn     生成Class的完全限定名称：com.butterknife.MainActivity$$ViewBinder
+     *
+     * @param classPackage 包名：com.butterknife
+     * @param className    生成的类：MainActivity$$ViewBinder
+     * @param targetClass  目标类：com.butterknife.MainActivity
+     * @param classFqcn    生成Class的完全限定名称：com.butterknife.MainActivity$$ViewBinder
      */
     public BindingClass(String classPackage, String className, String targetClass, String classFqcn) {
         this.classPackage = classPackage;
@@ -50,10 +50,10 @@ public final class BindingClass {
         this.classFqcn = classFqcn;
     }
 
-
     /**
      * 生成Java类
-     * @return  JavaFile
+     *
+     * @return JavaFile
      */
     public JavaFile brewJava() {
         TypeSpec.Builder result = TypeSpec.classBuilder(className)
@@ -67,7 +67,7 @@ public final class BindingClass {
             result.addSuperinterface(ParameterizedTypeName.get(VIEW_BINDER, TypeVariableName.get("T")));
         }
 
-        result.addMethod(createBindMethod());
+        result.addMethod(_createBindMethod());
 
         return JavaFile.builder(classPackage, result.build())
                 .addFileComment("Generated code from Butter Knife. Do not modify!")
@@ -76,9 +76,10 @@ public final class BindingClass {
 
     /**
      * 创建方法
-     * @return  MethodSpec
+     *
+     * @return MethodSpec
      */
-    private MethodSpec createBindMethod() {
+    private MethodSpec _createBindMethod() {
         MethodSpec.Builder result = MethodSpec.methodBuilder("bind")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
@@ -87,6 +88,7 @@ public final class BindingClass {
                 .addParameter(Object.class, "source");
 
         if (_hasParentBinding()) {
+            // 调用父类的bind()方法
             result.addStatement("super.bind(finder, target, source)");
         }
 
@@ -95,17 +97,13 @@ public final class BindingClass {
             result.addAnnotation(AnnotationSpec.builder(SuppressWarnings.class)
                     .addMember("value", "$S", "ResourceType")
                     .build());
+
             result.addStatement("$T context = finder.getContext(source)", CONTEXT);
             result.addStatement("$T res = context.getResources()", RESOURCES);
 
             for (FieldResourceBinding binding : resourceBindings) {
-                if (binding.isThemeable()) {
-//                result.addStatement("target.$L = $T.$L(res, theme, $L)", binding.getName(),
-//                        UTILS, binding.getMethod(), binding.getId());
-                } else {
-                    result.addStatement("target.$L = res.$L($L)", binding.getName(), binding.getMethod(),
-                            binding.getId());
-                }
+                result.addStatement("target.$L = res.$L($L)", binding.getName(), binding.getMethod(),
+                        binding.getId());
             }
 
             for (FieldColorBinding binding : colorBindings) {
@@ -118,6 +116,7 @@ public final class BindingClass {
 
     /**
      * 添加资源
+     *
      * @param binding 资源信息
      */
     public void addResourceBinding(FieldResourceBinding binding) {
@@ -130,6 +129,7 @@ public final class BindingClass {
 
     /**
      * 添加资源
+     *
      * @param binding 资源信息
      */
     public void addColorBinding(FieldColorBinding binding) {
@@ -142,6 +142,7 @@ public final class BindingClass {
 
     /**
      * 设置父类
+     *
      * @param parentBinding BindingClass
      */
     public void setParentBinding(BindingClass parentBinding) {

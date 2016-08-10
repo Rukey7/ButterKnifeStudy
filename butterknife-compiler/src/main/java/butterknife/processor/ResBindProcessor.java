@@ -56,13 +56,14 @@ public class ResBindProcessor extends AbstractProcessor {
         Map<TypeElement, BindingClass> targetClassMap = new LinkedHashMap<>();
         Set<TypeElement> erasedTargetNames = new LinkedHashSet<>();
 
+        // 处理BindString
         for (Element element : roundEnv.getElementsAnnotatedWith(BindString.class)) {
             if (VerifyHelper.verifyResString(element, messager)) {
                 ParseHelper.parseResString(element, targetClassMap, elementUtils);
                 erasedTargetNames.add((TypeElement) element.getEnclosingElement());
             }
         }
-
+        // 处理BindColor
         for (Element element : roundEnv.getElementsAnnotatedWith(BindColor.class)) {
             if (VerifyHelper.verifyResColor(element, messager)) {
                 ParseHelper.parseResColor(element, targetClassMap, elementUtils);
@@ -70,22 +71,19 @@ public class ResBindProcessor extends AbstractProcessor {
             }
         }
 
-
-
         for (Map.Entry<TypeElement, BindingClass> entry : targetClassMap.entrySet()) {
             TypeElement typeElement = entry.getKey();
             BindingClass bindingClass = entry.getValue();
 
+            // 查看是否父类也进行注解绑定，有则添加到BindingClass
             TypeElement parentType = _findParentType(typeElement, erasedTargetNames);
             if (parentType != null) {
-                System.out.println("--------------------------");
-                System.out.println(parentType.getQualifiedName());
-                System.out.println("--------------------------");
                 BindingClass parentBinding = targetClassMap.get(parentType);
                 bindingClass.setParentBinding(parentBinding);
             }
 
             try {
+                // 生成Java文件
                 bindingClass.brewJava().writeTo(filer);
             } catch (IOException e) {
                 _error(typeElement, "Unable to write view binder for type %s: %s", typeElement,
@@ -132,7 +130,6 @@ public class ResBindProcessor extends AbstractProcessor {
             }
         }
     }
-
 
     /**
      * 输出错误信息
