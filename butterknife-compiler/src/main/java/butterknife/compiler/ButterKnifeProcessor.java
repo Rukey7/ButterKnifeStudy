@@ -1,4 +1,6 @@
-package butterknife.processor;
+package butterknife.compiler;
+
+import com.google.auto.service.AutoService;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -10,6 +12,7 @@ import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Filer;
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
@@ -21,17 +24,16 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 
+import butterknife.annotation.Bind;
 import butterknife.annotation.BindColor;
 import butterknife.annotation.BindString;
-import butterknife.compiler.BindingClass;
-import butterknife.compiler.ParseHelper;
-import butterknife.compiler.VerifyHelper;
 
 /**
- * Created by long on 2016/8/9.
- * 资源注解处理器
+ * Created by long on 2016/8/11.
+ * 注解处理器
  */
-public class ResBindProcessor extends AbstractProcessor {
+@AutoService(Processor.class)
+public class ButterKnifeProcessor extends AbstractProcessor {
 
     private Types typeUtils;
     private Elements elementUtils;
@@ -49,21 +51,28 @@ public class ResBindProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        Map<TypeElement, BindingClass> targetClassMap = new LinkedHashMap<>();
+        // 保存包含注解元素的目标类，注意是使用注解的外围类，主要用来处理父类继承，例：MainActivity
         Set<TypeElement> erasedTargetNames = new LinkedHashSet<>();
+        // TypeElement 使用注解的外围类，BindingClass 对应一个要生成的类
+        Map<TypeElement, BindingClass> targetClassMap = new LinkedHashMap<>();
 
         // 处理BindString
         for (Element element : roundEnv.getElementsAnnotatedWith(BindString.class)) {
             if (VerifyHelper.verifyResString(element, messager)) {
-                ParseHelper.parseResString(element, targetClassMap, elementUtils);
-                erasedTargetNames.add((TypeElement) element.getEnclosingElement());
+                ParseHelper.parseResString(element, targetClassMap, erasedTargetNames, elementUtils);
             }
         }
         // 处理BindColor
         for (Element element : roundEnv.getElementsAnnotatedWith(BindColor.class)) {
             if (VerifyHelper.verifyResColor(element, messager)) {
-                ParseHelper.parseResColor(element, targetClassMap, elementUtils);
-                erasedTargetNames.add((TypeElement) element.getEnclosingElement());
+                ParseHelper.parseResColor(element, targetClassMap, erasedTargetNames, elementUtils);
+            }
+        }
+        // 处理Bind
+        for (Element element : roundEnv.getElementsAnnotatedWith(Bind.class)) {
+            if (VerifyHelper.verifyView(element, messager)) {
+                ParseHelper.parseView(element, targetClassMap, erasedTargetNames,
+                        elementUtils, typeUtils, messager);
             }
         }
 
@@ -94,6 +103,7 @@ public class ResBindProcessor extends AbstractProcessor {
         Set<String> annotations = new LinkedHashSet<>();
         annotations.add(BindString.class.getCanonicalName());
         annotations.add(BindColor.class.getCanonicalName());
+        annotations.add(Bind.class.getCanonicalName());
         return annotations;
     }
 

@@ -2,8 +2,9 @@ package butterknife.compiler;
 
 /**
  * Created by long on 2016/8/10.
+ * 资源 Color 绑定信息
  */
-public class FieldColorBinding {
+public final class FieldColorBinding {
 
     private final int id;
     private final String name;

@@ -13,6 +13,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.tools.Diagnostic;
 
+import butterknife.annotation.Bind;
 import butterknife.annotation.BindColor;
 import butterknife.annotation.BindString;
 
@@ -44,6 +45,13 @@ public final class VerifyHelper {
         return _verifyElement(element, BindColor.class, messager);
     }
 
+    /**
+     * 验证 View
+     */
+    public static boolean verifyView(Element element, Messager messager) {
+        return _verifyElement(element, Bind.class, messager);
+    }
+
     /*************************************************************************/
 
     /**
@@ -65,13 +73,6 @@ public final class VerifyHelper {
         if (!_verifyElementType(element, annotationClass, messager)) {
             return false;
         }
-//        // 检测使用该注解的元素类型是否正确
-//        if (!elementType.equals(element.asType().toString())) {
-//            _error(messager, element, "@%s field type must be 'String'. (%s.%s)",
-//                    annotationClass.getSimpleName(), enclosingElement.getQualifiedName(),
-//                    element.getSimpleName());
-//            return false;
-//        }
         // 使用该注解的字段访问权限不能为 private 和 static
         Set<Modifier> modifiers = element.getModifiers();
         if (modifiers.contains(Modifier.PRIVATE) || modifiers.contains(Modifier.STATIC)) {

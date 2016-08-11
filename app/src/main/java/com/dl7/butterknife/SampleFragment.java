@@ -10,6 +10,7 @@ import android.widget.TextView;
 
 import com.dl7.butterknifelib.ButterKnife;
 
+import butterknife.annotation.Bind;
 import butterknife.annotation.BindString;
 
 /**
@@ -20,6 +21,8 @@ public class SampleFragment extends Fragment {
 
     @BindString(R.string.fragment_string)
     String mBindString;
+    @Bind(R.id.tv_content)
+    TextView textView;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -32,7 +35,7 @@ public class SampleFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_sample, null);
         ButterKnife.bind(this, view);
 
-        TextView textView = (TextView) view.findViewById(R.id.tv_content);
+//        TextView textView = (TextView) view.findViewById(R.id.tv_content);
         textView.setText(mBindString);
         return view;
     }
