@@ -11,7 +11,9 @@ import java.util.Set;
 import javax.annotation.processing.Messager;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
@@ -24,6 +26,7 @@ import javax.tools.Diagnostic;
 import butterknife.annotation.Bind;
 import butterknife.annotation.BindColor;
 import butterknife.annotation.BindString;
+import butterknife.annotation.OnClick;
 
 /**
  * Created by long on 2016/8/9.
@@ -36,6 +39,7 @@ public final class ParseHelper {
     private static final String LIST_TYPE = List.class.getCanonicalName();
     private static final String ITERABLE_TYPE = "java.lang.Iterable<?>";
     static final String VIEW_TYPE = "android.view.View";
+    static final int NO_ID = -1;
 
 
     private ParseHelper() {
@@ -98,9 +102,9 @@ public final class ParseHelper {
      * @param targetClassMap 映射表
      * @param elementUtils   元素工具类
      */
-    public static void parseView(Element element, Map<TypeElement, BindingClass> targetClassMap,
-                                 Set<TypeElement> erasedTargetNames,
-                                 Elements elementUtils, Types typeUtils, Messager messager) {
+    public static void parseViewBind(Element element, Map<TypeElement, BindingClass> targetClassMap,
+                                     Set<TypeElement> erasedTargetNames,
+                                     Elements elementUtils, Types typeUtils, Messager messager) {
         TypeMirror elementType = element.asType();
         // 判断是一个 View 还是列表
         if (elementType.getKind() == TypeKind.ARRAY) {
@@ -114,6 +118,99 @@ public final class ParseHelper {
         } else {
             _parseBindOne(element, targetClassMap, erasedTargetNames, elementUtils, messager);
         }
+    }
+
+    /**
+     * 解析 OnClick 资源
+     *
+     * @param element        使用注解的元素
+     * @param targetClassMap 映射表
+     * @param elementUtils   元素工具类
+     */
+    public static void parseOnClick(Element element, Map<TypeElement, BindingClass> targetClassMap,
+                                 Set<TypeElement> erasedTargetNames,
+                                 Elements elementUtils, Types typeUtils, Messager messager) {
+
+        ExecutableElement executableElement = (ExecutableElement) element;
+        TypeElement enclosingElement = (TypeElement) element.getEnclosingElement();
+
+        int[] ids = element.getAnnotation(OnClick.class).value();
+        String name = executableElement.getSimpleName().toString();
+
+        // 检测是否有重复 ID
+        Integer duplicateId = _findDuplicate(ids);
+        if (duplicateId != null) {
+            _error(messager, element, "@%s annotation contains duplicate ID %d. (%s.%s)", Bind.class.getSimpleName(),
+                    duplicateId, enclosingElement.getQualifiedName(), element.getSimpleName());
+            return;
+        }
+
+        // 如果未设置ID则默认为 NO_ID，则把外围类作为要设置点击的对象
+        for (int id : ids) {
+            if (id == NO_ID) {
+                // 有 NO_ID 则只能有一个ID
+                if (ids.length > 1) {
+                    _error(messager, element, "@%s annotation contains invalid ID %d. (%s.%s)",
+                            OnClick.class.getSimpleName(), NO_ID, enclosingElement.getQualifiedName(),
+                            element.getSimpleName());
+                    return;
+                }
+                // 判断外围类的类型是 VIEW 的子类或接口
+                if (!_isSubtypeOfType(enclosingElement.asType(), VIEW_TYPE) && !_isInterface(enclosingElement.asType())) {
+                    _error(messager, element, "@%s annotation without an ID may only be used with an object of type "
+                                    + "\"%s\" or an interface. (%s.%s)",
+                            OnClick.class.getSimpleName(), VIEW_TYPE,
+                            enclosingElement.getQualifiedName(), element.getSimpleName());
+                    return;
+                }
+            }
+        }
+
+        List<? extends VariableElement> methodParameters = executableElement.getParameters();
+        // OnClickListener 的方法void onClick(View v)，只有一个参数 View，所有我们的方法不能超过1个参数，可以为0
+        if (methodParameters.size() > 1) {
+            _error(messager, element, "@%s methods can have at most 1 parameter(s). (%s.%s)",
+                    OnClick.class.getSimpleName(), enclosingElement.getQualifiedName(), element.getSimpleName());
+            return;
+        }
+        // 返回值类型也要满足 OnClickListener 的方法
+        TypeMirror returnType = executableElement.getReturnType();
+        if (returnType instanceof TypeVariable) {
+            TypeVariable typeVariable = (TypeVariable) returnType;
+            returnType = typeVariable.getUpperBound();
+        }
+        if (returnType.getKind() != TypeKind.VOID) {
+            _error(messager, element, "@%s methods must have a 'viod' return type. (%s.%s)",
+                    OnClick.class.getSimpleName(), enclosingElement.getQualifiedName(), element.getSimpleName());
+            return;
+        }
+
+        Parameter[] parameters = Parameter.NONE;
+        // 我们已经知道方法参数最多只能有一个，且必须为 View 的子类或接口
+        if (!methodParameters.isEmpty()) {
+            parameters = new Parameter[1];
+            TypeMirror typeMirror = methodParameters.get(0).asType();
+            // 泛型处理
+            if (typeMirror instanceof TypeVariable) {
+                TypeVariable typeVariable = (TypeVariable) returnType;
+                typeMirror = typeVariable.getUpperBound();
+            }
+            // 必须为 View 的子类或接口
+            if (!_isSubtypeOfType(typeMirror, VIEW_TYPE) && !_isInterface(typeMirror)) {
+                _error(messager, element, "Unable to match @%s  method arguments. (%s.%s)",
+                        OnClick.class.getSimpleName(), enclosingElement.getQualifiedName(), element.getSimpleName());
+                return;
+            }
+            parameters[0] = new Parameter(0, TypeName.get(typeMirror));
+        }
+
+        OnClickBinding methodViewBinding = new OnClickBinding(name, Arrays.asList(parameters));
+        BindingClass bindingClass = _getOrCreateTargetClass(element, targetClassMap, elementUtils);
+        for (int id : ids) {
+            bindingClass.addMethodBinding(id, methodViewBinding);
+        }
+
+        erasedTargetNames.add(enclosingElement);
     }
 
     /*************************************************************************/

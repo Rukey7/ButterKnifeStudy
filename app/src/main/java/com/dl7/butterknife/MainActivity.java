@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -21,6 +20,7 @@ import java.util.List;
 import butterknife.annotation.Bind;
 import butterknife.annotation.BindColor;
 import butterknife.annotation.BindString;
+import butterknife.annotation.OnClick;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -53,12 +53,12 @@ public class MainActivity extends AppCompatActivity {
         view.setBackgroundColor(mBindColor);
 
         mButtons.get(0).setTextColor(mBtnTextColor);
-        mButtons.get(1).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(MainActivity.this, "Button Two", Toast.LENGTH_SHORT).show();
-            }
-        });
+//        mButtons.get(1).setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                Toast.makeText(MainActivity.this, "Button Two", Toast.LENGTH_SHORT).show();
+//            }
+//        });
 //        Button btnDialog = (Button) findViewById(R.id.btn_dialog);
 //        btnDialog.setTextColor(mBtnTextColor);
 //        btnDialog.setOnClickListener(new View.OnClickListener() {
@@ -82,17 +82,20 @@ public class MainActivity extends AppCompatActivity {
         Log.w("MainActivity", b.getAString());
     }
 
+    @OnClick({R.id.btn_one, R.id.btn_two})
+    void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.btn_one:
+                Toast.makeText(MainActivity.this, "Button One", Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.btn_two:
+                Toast.makeText(MainActivity.this, "Button Two", Toast.LENGTH_SHORT).show();
+                break;
+        }
+    }
 
-    /**
-     * 初始化 Toolbar
-     *
-     * @param toolbar
-     * @param homeAsUpEnabled
-     * @param title
-     */
-    public void initToolBar(Toolbar toolbar, boolean homeAsUpEnabled, String title) {
-        toolbar.setTitle(title);
-        setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(homeAsUpEnabled);
+    @OnClick(R.id.btn_three)
+    void showToast() {
+        Toast.makeText(MainActivity.this, "Button Three", Toast.LENGTH_SHORT).show();
     }
 }

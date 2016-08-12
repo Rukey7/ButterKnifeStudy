@@ -11,8 +11,10 @@ import com.squareup.javapoet.TypeVariableName;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.lang.model.element.Modifier;
 
@@ -29,11 +31,14 @@ public final class BindingClass {
     private static final ClassName CONTEXT = ClassName.get("android.content", "Context");
     private static final ClassName RESOURCES = ClassName.get("android.content.res", "Resources");
     private static final ClassName CONTEXT_COMPAT = ClassName.get("android.support.v4.content", "ContextCompat");
+    private static final ClassName ON_CLICK_LISTENER = ClassName.get("android.view.View", "OnClickListener");
 
     private final List<FieldResourceBinding> resourceBindings = new ArrayList<>();
     private final List<FieldColorBinding> colorBindings = new ArrayList<>();
     private final List<FieldViewBinding> viewBindings = new ArrayList<>();
     private final Map<Integer, FieldViewBinding> viewIdMap = new LinkedHashMap<>();
+    private final List<OnClickBinding> methodBindings = new ArrayList<>();
+    private final Map<Integer, Set<OnClickBinding>> clickIdMap = new LinkedHashMap<>();
     private final Map<FieldCollectionViewBinding, int[]> collectionBindings = new LinkedHashMap<>();
     private BindingClass parentBinding;
     private final String classPackage;
@@ -155,6 +160,43 @@ public final class BindingClass {
             }
         }
 
+        if (_hasMethodBinding()) {
+            result.addStatement("$T view", VIEW);
+            for (Map.Entry<Integer, Set<OnClickBinding>> entry : clickIdMap.entrySet()) {
+                int id = entry.getKey();
+                Set<OnClickBinding> bindings = entry.getValue();
+                // 获取 View,如果为 null 则不做点击绑定
+                result.addStatement("view = finder.findOptionalView(source, $L, null)", id);
+                // 条件判断 View 是否为空
+                result.beginControlFlow("if (view != null)");
+
+                // 匿名内部类，实现 OnClickListener
+                TypeSpec.Builder callback = TypeSpec.anonymousClassBuilder("")
+                        .superclass(ON_CLICK_LISTENER);
+                // 实现 onClick 方法
+                MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("onClick")
+                        .addAnnotation(Override.class)
+                        .addModifiers(Modifier.PUBLIC)
+                        .addParameter(VIEW, "v");
+                // 调用绑定的目标方法
+                for (OnClickBinding binding : bindings) {
+                    List<Parameter> parameters = binding.getParameters();
+                    if (parameters.isEmpty()) {
+                        methodBuilder.addStatement("target.$L()", binding.getName());
+                    } else {
+                        // 这里我们已知 Parameter 最多只有一个，不然要做循环处理
+                        // TypeName typeName = parameters.get(0).getType(); 可以用来做类型转换处理，
+                        // 调用 finder.<$T>castParam()，传的参数太多我直接用 View 了
+                        methodBuilder.addStatement("target.$L(v)", binding.getName());
+                    }
+                }
+                callback.addMethod(methodBuilder.build());
+                // 添加 setOnClickListener，记得介绍条件判断
+                result.addStatement("view.setOnClickListener($L)", callback.build());
+                result.endControlFlow();
+            }
+        }
+
         return result.build();
     }
 
@@ -218,6 +260,25 @@ public final class BindingClass {
      */
     void addFieldCollection(int[] ids, FieldCollectionViewBinding binding) {
         collectionBindings.put(binding, ids);
+    }
+
+
+    /**
+     * 添加 MethodBinding
+     *
+     * @param binding 资源信息
+     */
+    public void addMethodBinding(int id, OnClickBinding binding) {
+        Set<OnClickBinding> methodViewBindings = clickIdMap.get(id);
+        if (methodViewBindings == null) {
+            methodViewBindings = new LinkedHashSet<>();
+            methodViewBindings.add(binding);
+            clickIdMap.put(id, methodViewBindings);
+        }
+    }
+
+    private boolean _hasMethodBinding() {
+        return !clickIdMap.isEmpty();
     }
 
     /**

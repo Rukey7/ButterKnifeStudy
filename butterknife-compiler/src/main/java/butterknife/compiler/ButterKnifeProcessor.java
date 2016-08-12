@@ -27,6 +27,7 @@ import javax.tools.Diagnostic;
 import butterknife.annotation.Bind;
 import butterknife.annotation.BindColor;
 import butterknife.annotation.BindString;
+import butterknife.annotation.OnClick;
 
 /**
  * Created by long on 2016/8/11.
@@ -71,7 +72,14 @@ public class ButterKnifeProcessor extends AbstractProcessor {
         // 处理Bind
         for (Element element : roundEnv.getElementsAnnotatedWith(Bind.class)) {
             if (VerifyHelper.verifyView(element, messager)) {
-                ParseHelper.parseView(element, targetClassMap, erasedTargetNames,
+                ParseHelper.parseViewBind(element, targetClassMap, erasedTargetNames,
+                        elementUtils, typeUtils, messager);
+            }
+        }
+        // 处理OnClick
+        for (Element element : roundEnv.getElementsAnnotatedWith(OnClick.class)) {
+            if (VerifyHelper.verifyOnClick(element, messager)) {
+                ParseHelper.parseOnClick(element, targetClassMap, erasedTargetNames,
                         elementUtils, typeUtils, messager);
             }
         }
@@ -104,6 +112,7 @@ public class ButterKnifeProcessor extends AbstractProcessor {
         annotations.add(BindString.class.getCanonicalName());
         annotations.add(BindColor.class.getCanonicalName());
         annotations.add(Bind.class.getCanonicalName());
+        annotations.add(OnClick.class.getCanonicalName());
         return annotations;
     }
 

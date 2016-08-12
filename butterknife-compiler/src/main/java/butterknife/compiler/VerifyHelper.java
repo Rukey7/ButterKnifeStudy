@@ -8,6 +8,7 @@ import java.util.Set;
 import javax.annotation.processing.Messager;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
@@ -16,6 +17,7 @@ import javax.tools.Diagnostic;
 import butterknife.annotation.Bind;
 import butterknife.annotation.BindColor;
 import butterknife.annotation.BindString;
+import butterknife.annotation.OnClick;
 
 /**
  * Created by long on 2016/8/9.
@@ -50,6 +52,13 @@ public final class VerifyHelper {
      */
     public static boolean verifyView(Element element, Messager messager) {
         return _verifyElement(element, Bind.class, messager);
+    }
+
+    /**
+     * 验证 View
+     */
+    public static boolean verifyOnClick(Element element, Messager messager) {
+        return _verifyElement(element, OnClick.class, messager);
     }
 
     /*************************************************************************/
@@ -138,6 +147,11 @@ public final class VerifyHelper {
                 _error(messager, element, "@%s field type must be 'int' or 'ColorStateList'. (%s.%s)",
                         BindColor.class.getSimpleName(), enclosingElement.getQualifiedName(),
                         element.getSimpleName());
+                return false;
+            }
+        } else if (annotationClass == OnClick.class) {
+            if (!(element instanceof ExecutableElement) || (element.getKind() != ElementKind.METHOD)) {
+                _error(messager, element, "@%s annotation must be on a method.", annotationClass.getSimpleName());
                 return false;
             }
         }
