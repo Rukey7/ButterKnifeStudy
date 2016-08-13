@@ -61,7 +61,7 @@ public final class ParseHelper {
 
         BindingClass bindingClass = _getOrCreateTargetClass(element, targetClassMap, elementUtils);
         // 生成资源信息
-        FieldResourceBinding binding = new FieldResourceBinding(resId, name, "getString", false);
+        FieldResourceBinding binding = new FieldResourceBinding(resId, name, "getString");
         // 给BindingClass添加资源信息
         bindingClass.addResourceBinding(binding);
 

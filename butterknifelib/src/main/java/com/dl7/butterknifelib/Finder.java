@@ -5,6 +5,9 @@ import android.app.Dialog;
 import android.content.Context;
 import android.view.View;
 
+/**
+ * 资源查找的处理类
+ */
 @SuppressWarnings("UnusedDeclaration") // Used by generated code.
 public enum Finder {
     VIEW {
@@ -52,7 +55,7 @@ public enum Finder {
     };
 
     /**
-     * findViewById
+     * findViewById，会进行 null 判断
      * @param source
      * @param id    资源ID
      * @param who   描述信息
@@ -75,11 +78,17 @@ public enum Finder {
         return view;
     }
 
+    /**
+     * findViewById，不进行 null 判断
+     */
     public <T> T findOptionalView(Object source, int id, String who) {
         View view = findView(source, id);
         return castView(view, id, who);
     }
 
+    /**
+     * 类型转换
+     */
     @SuppressWarnings("unchecked") // That's the point.
     public <T> T castView(View view, int id, String who) {
         try {
@@ -99,6 +108,9 @@ public enum Finder {
         }
     }
 
+    /**
+     * 参数类型转换
+     */
     @SuppressWarnings("unchecked") // That's the point.
     public <T> T castParam(Object value, String from, int fromPosition, String to, int toPosition) {
         try {

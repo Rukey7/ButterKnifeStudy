@@ -8,13 +8,11 @@ public final class FieldResourceBinding {
     private final int id;
     private final String name;
     private final String method;
-    private final boolean themeable;
 
-    public FieldResourceBinding(int id, String name, String method, boolean themeable) {
+    public FieldResourceBinding(int id, String name, String method) {
         this.id = id;
         this.name = name;
         this.method = method;
-        this.themeable = themeable;
     }
 
     public int getId() {
@@ -27,9 +25,5 @@ public final class FieldResourceBinding {
 
     public String getMethod() {
         return method;
-    }
-
-    public boolean isThemeable() {
-        return themeable;
     }
 }

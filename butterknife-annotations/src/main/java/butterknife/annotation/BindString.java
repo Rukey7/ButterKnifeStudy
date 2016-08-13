@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 
 /**
  * Created by long on 2016/8/9.
- * 绑定字符串资源
+ * 字符串资源注解
  */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)

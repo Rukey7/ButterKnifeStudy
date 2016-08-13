@@ -16,11 +16,9 @@ public class ButterKnife {
 
     static final Map<Class<?>, ViewBinder<Object>> BINDERS = new LinkedHashMap<>();
 
-
     private ButterKnife() {
         throw new AssertionError("No instances.");
     }
-
 
     /**
      * 绑定 Activity
@@ -32,7 +30,7 @@ public class ButterKnife {
     /**
      * 绑定目标对象
      * @param target 目标为 Object
-     * @param source 依赖 Activity
+     * @param source 依附 Activity
      */
     public static void bind(@NonNull Object target, @NonNull Activity source) {
         _bind(target, source, Finder.ACTIVITY);
@@ -48,7 +46,7 @@ public class ButterKnife {
     /**
      * 绑定目标对象
      * @param target 目标为 Object
-     * @param source 依赖 View
+     * @param source 依附 View
      */
     public static void bind(@NonNull Object target, @NonNull View source) {
         _bind(target, source, Finder.VIEW);
@@ -64,7 +62,7 @@ public class ButterKnife {
     /**
      * 绑定目标对象
      * @param target 目标为 Object
-     * @param source 依赖 Dialog
+     * @param source 依附 Dialog
      */
     public static void bind(@NonNull Object target, @NonNull Dialog source) {
         _bind(target, source, Finder.DIALOG);
@@ -79,7 +77,7 @@ public class ButterKnife {
     private static void _bind(@NonNull Object target, @NonNull Object source, @NonNull Finder finder) {
         Class<?> targetClass = target.getClass();
         try {
-            ViewBinder<Object> viewBinder = findViewBinderForClass(targetClass);
+            ViewBinder<Object> viewBinder = _findViewBinderForClass(targetClass);
             if (viewBinder != null) {
                 // 执行bind方法进行资源绑定
                 viewBinder.bind(finder, target, source);
@@ -96,7 +94,7 @@ public class ButterKnife {
      * @throws IllegalAccessException
      * @throws InstantiationException
      */
-    private static ViewBinder<Object> findViewBinderForClass(Class<?> cls)
+    private static ViewBinder<Object> _findViewBinderForClass(Class<?> cls)
             throws IllegalAccessException, InstantiationException {
         ViewBinder<Object> viewBinder = BINDERS.get(cls);
         if (viewBinder != null) {
@@ -112,7 +110,7 @@ public class ButterKnife {
             viewBinder = (ViewBinder<Object>) viewBindingClass.newInstance();
         } catch (ClassNotFoundException e) {
             // 查找父类是否存在
-            viewBinder = findViewBinderForClass(cls.getSuperclass());
+            viewBinder = _findViewBinderForClass(cls.getSuperclass());
         }
         BINDERS.put(cls, viewBinder);
         return viewBinder;
