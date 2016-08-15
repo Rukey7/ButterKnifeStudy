@@ -5,7 +5,7 @@ import com.squareup.javapoet.TypeName;
 import static butterknife.compiler.ParseHelper.VIEW_TYPE;
 
 /**
- * 视图绑定信息
+ * View绑定信息
  */
 final class FieldViewBinding implements ViewBinding {
     private final String name;

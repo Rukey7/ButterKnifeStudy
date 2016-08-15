@@ -249,7 +249,7 @@ public final class ParseHelper {
     }
 
     /**
-     * 先通过 Types 工具对元素类型进行形式参数擦除，再通过字符比对进行二次擦除如果必要的话
+     * 先通过 Types 工具对元素类型进行形式类型参数擦除，再通过字符比对进行二次擦除如果必要的话
      * 例：java.util.List<java.lang.String> -> java.util.List
      *
      * @param elementType 元素类型
@@ -280,7 +280,7 @@ public final class ParseHelper {
             return false;
         }
         DeclaredType declaredType = (DeclaredType) typeMirror;
-        // 判断泛型列表
+        // 判断泛型参数列表
         List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
         if (typeArguments.size() > 0) {
             StringBuilder typeString = new StringBuilder(declaredType.asElement().toString());

@@ -45,7 +45,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-
 //        TextView textView = (TextView) findViewById(R.id.tv_desc);
         textView.setText(mBindString);
 

@@ -3,7 +3,7 @@ package butterknife.compiler;
 import com.squareup.javapoet.TypeName;
 
 /**
- * 视图列表绑定信息
+ * View列表信息
  */
 final class FieldCollectionViewBinding implements ViewBinding {
     enum Kind {
